@@ -54,7 +54,7 @@ register_blueprint "kperk_fireangel"
 	callbacks = {
 		on_area_damage = [[
 			function ( self, weapon, level, c, damage, distance, center, source, is_repeat )				
-				nova.log("Using modded fireangel perk")
+				nova.log("Using modded fireangel perk - Better Fireangel")
 				if not is_repeat then					
 					if weapon and weapon.ui_target and weapon.ui_target.type == world:hash("beam") then																		
 						ignite_along_line(self, level, source, c)						
