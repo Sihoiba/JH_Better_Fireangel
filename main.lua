@@ -1,5 +1,53 @@
 nova.require "libraries/bresenham"
 
+register_blueprint "intense_heat_1"
+{
+	flags = { EF_NOPICKUP }, 
+	text = {
+		name    = "Intense Heat",
+		desc    = "reduces fire resistances by {!25%}",
+	},
+	callbacks = {
+		on_die = [[
+			function ( self )
+				world:mark_destroy( self )
+			end
+		]],
+	},
+	attributes = {		
+		resist = {			
+			ignite = -25,			
+		},
+	},
+	ui_buff = {
+		color = RED,
+	},
+}
+
+register_blueprint "intense_heat_2"
+{
+	flags = { EF_NOPICKUP }, 
+	text = {
+		name    = "Intense Heat",
+		desc    = "reduces fire resistances by {!50%}",
+	},
+	callbacks = {
+		on_die = [[
+			function ( self )
+				world:mark_destroy( self )
+			end
+		]],
+	},
+	attributes = {		
+		resist = {			
+			ignite = -50,			
+		},
+	},
+	ui_buff = {
+		color = RED,
+	},
+}
+
 register_blueprint "kperk_fireangel"
 {
 	flags = { EF_NOPICKUP }, 
@@ -12,20 +60,18 @@ register_blueprint "kperk_fireangel"
 						ignite_along_line(self, level, source, c)						
 					else
 						for e in level:entities( c ) do
-							if e.data then
-								nova.log(e:get_name().." can burn "..tostring(e.data.can_burn))
-							end
 							if e.data and e.data.can_burn then			
 								local amount = world:get_player().attributes.fireangel_burn
 								local slevel = core.get_status_value( amount, "ignite", world:get_player() )
-								local rmod = world:get_player().attributes.fire_resist_reduction					
+								local ihlevel = world:get_player().data.intense_heat							
 								if e.attributes and e:attribute( "resist", "ignite" ) == 100 then
-									nova.log("burn fire resistant enemy "..e:get_name())
-									core.apply_damage_status( e, "burning", "ignite", slevel, world:get_player(), false, -1, rmod)
-								else
-									nova.log("burn normal enemy "..e:get_name())
-									core.apply_damage_status( e, "burning", "ignite", slevel, world:get_player() )
-								end
+									if ihlevel == 1 then
+										world:add_buff( e, "intense_heat_1", 200 )
+									elseif ihlevel == 2 then
+										world:add_buff( e, "intense_heat_2", 200 )
+									end									
+								end								
+								core.apply_damage_status( e, "burning", "ignite", slevel, world:get_player() )
 							end
 						end
 					end	
@@ -54,8 +100,7 @@ register_blueprint "ktrait_master_fireangel"
 		level    = 1,
 		affinity = {
 			ignite = 0,
-		},
-		fire_resist_reduction = 0
+		},		
 	},
 	callbacks = {
 		on_activate = [=[
@@ -70,10 +115,10 @@ register_blueprint "ktrait_master_fireangel"
 				elseif tlevel == 2 then
 					entity.attributes.splash_mod = 0.0
 					t.attributes["ignite.affinity"] = 50
-					t.attributes["fire_resist_reduction"] = 25
+					entity.data.intense_heat = 1
 				elseif tlevel == 3 then
 					t.attributes["ignite.affinity"] = 100
-					t.attributes["fire_resist_reduction"] = 50
+					entity.data.intense_heat = 2
 				end
 				if tlevel == 1 then
 					local index = 0
