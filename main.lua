@@ -5,9 +5,15 @@ register_blueprint "intense_heat_1"
 	flags = { EF_NOPICKUP }, 
 	text = {
 		name    = "Intense Heat",
-		desc    = "reduces fire resistances by {!25%}",
+		desc    = "reduces fire resistances to {!50%}",
 	},
 	callbacks = {
+		on_attach = [[
+			function( self, parent )
+				local ignite_resist = parent:attribute( "resist", "ignite" )
+				self.attributes["ignite.resist"] = -1 * ( ignite_resist - 50 )
+			end
+		]],
 		on_die = [[
 			function ( self )
 				world:mark_destroy( self )
@@ -16,7 +22,7 @@ register_blueprint "intense_heat_1"
 	},
 	attributes = {		
 		resist = {			
-			ignite = -25,			
+			ignite = 0,			
 		},
 	},
 	ui_buff = {
@@ -25,6 +31,36 @@ register_blueprint "intense_heat_1"
 }
 
 register_blueprint "intense_heat_2"
+{
+	flags = { EF_NOPICKUP }, 
+	text = {
+		name    = "Intense Heat",
+		desc    = "reduces fire resistances to {!10%}",
+	},
+	callbacks = {
+		on_attach = [[
+			function( self, parent )
+				local ignite_resist = parent:attribute( "resist", "ignite" )
+				self.attributes["ignite.resist"] = -1 * ( ignite_resist - 10 )
+			end
+		]],
+		on_die = [[
+			function ( self )
+				world:mark_destroy( self )
+			end
+		]],
+	},
+	attributes = {		
+		resist = {			
+			ignite = 0,			
+		},
+	},
+	ui_buff = {
+		color = RED,
+	},
+}
+
+register_blueprint "intense_heat_3"
 {
 	flags = { EF_NOPICKUP }, 
 	text = {
@@ -63,12 +99,16 @@ register_blueprint "kperk_fireangel"
 							if e.data and e.data.can_burn then			
 								local amount = world:get_player().attributes.fireangel_burn
 								local slevel = core.get_status_value( amount, "ignite", world:get_player() )
-								local ihlevel = world:get_player().data.intense_heat							
-								if e.attributes and e:attribute( "resist", "ignite" ) == 100 then
+								local ihlevel = world:get_player().data.intense_heat
+								if ihlevel == 2 and e.attributes and e:attribute( "resist", "ignite" ) == 50 then
+									world:add_buff( e, "intense_heat_3", (slevel + 2) * 100 )
+								end
+								if e.attributes and e:attribute( "resist", "ignite" ) >= 100 then
+									nova.log("Intense heat duration "..(slevel + 2) * 100)
 									if ihlevel == 1 then
-										world:add_buff( e, "intense_heat_1", 200 )
+										world:add_buff( e, "intense_heat_1", (slevel + 2) * 100 )
 									elseif ihlevel == 2 then
-										world:add_buff( e, "intense_heat_2", 200 )
+										world:add_buff( e, "intense_heat_2", (slevel + 2) * 100 )
 									end									
 								end								
 								core.apply_damage_status( e, "burning", "ignite", slevel, world:get_player() )
@@ -93,7 +133,7 @@ register_blueprint "ktrait_master_fireangel"
 	text = {
 		name   = "FIREANGEL",
 		desc   = "MASTER TRAIT - splash damage resistance and fire effects. Modded.",
-		full   = "You love heat, you're the angel of fire! You shrug off explosions unless you take a direct hit, moreover any wielded weapon you use (especially area of effect weapons) sets the world on fire!\n\n{!LEVEL 1} - {!50%} reduction of splash damage (stacks), {!immunity} to fire status effect, {!1 Burning} stack per hit, {!8 Burning} flame created\n{!LEVEL 2} - splash damage {!immunity}, {!+50%} to {!all} Burning you inflict, 100% fire resist enemies treated as 75% resist\n{!LEVEL 3} - {!+100%} to {!all} Burning effects you inflict, 100% fire resist enemies treated as 50% resist\n\nYou can pick only one MASTER trait per character.",
+		full   = "You love heat, you're the angel of fire! You shrug off explosions unless you take a direct hit, moreover any wielded weapon you use (especially area of effect weapons) sets the world on fire!\n\n{!LEVEL 1} - {!50%} reduction of splash damage (stacks), {!immunity} to fire status effect, {!1 Burning} stack per hit, {!8 Burning} flame created\n{!LEVEL 2} - splash damage {!immunity}, {!+50%} to {!all} Burning you inflict, fire immune enemies only 50% resist\n{!LEVEL 3} - {!+100%} to {!all} Burning effects you inflict, fire immune enemies only 10% resist\n\nYou can pick only one MASTER trait per character.",
 		abbr   = "MFA",
 	},
 	attributes = {
