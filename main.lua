@@ -1,5 +1,36 @@
 nova.require "libraries/bresenham"
 
+function ignite_along_line(self, level, source, end_point)
+    local start_point = source:get_position()
+    local points, _ = line(start_point.x, start_point.y, end_point.x, end_point.y, function (x,y)
+        return true
+    end)
+    local burn_amount = world:get_player().attributes.fireangel_burn
+    local burn_slevel = core.get_status_value( burn_amount, "ignite", world:get_player() )
+    local flame_amount = world:get_player().attributes.fireangel_flame
+    local flame_slevel = core.get_status_value( flame_amount, "ignite", world:get_player() )
+    nova.log("Fireangel beam mod checking for targets")
+    local burn_point = source:get_position()
+    for _, v in ipairs(points) do
+        if v.x == start_point.x and v.y == start_point.y then
+            nova.log("Fireangel beam mod not igniting player")
+        else
+            burn_point.x = v.x
+            burn_point.y = v.y
+            for e in world:get_level():entities( burn_point ) do
+                nova.log("Fireangel beam mod entity found on line")
+                if e.data and e.data.can_burn then
+                    nova.log("Fireangel beam mod trying to burn "..e.text.name)
+                    core.apply_damage_status( e, "burning", "ignite", burn_slevel, world:get_player())
+                end
+            end
+            nova.log("Fireangel beam mod placing flames x"..burn_point.x..", y"..burn_point.y)
+            gtk.place_flames( burn_point, math.max( flame_slevel + math.random(3), 2 ), 300 + math.random(400) + 50 )
+        end
+
+    end
+end
+
 register_blueprint "intense_heat_1"
 {
     flags = { EF_NOPICKUP }, 
