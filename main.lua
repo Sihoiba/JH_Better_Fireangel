@@ -17,7 +17,7 @@ function ignite_along_line(self, level, source, end_point)
         else
             burn_point.x = v.x
             burn_point.y = v.y
-            for e in world:get_level():entities( burn_point ) do
+            for e in level:entities( burn_point ) do
                 nova.log("Fireangel beam mod entity found on line")
                 if e.data and e.data.can_burn then
                     nova.log("Fireangel beam mod trying to burn "..e.text.name)
@@ -27,13 +27,48 @@ function ignite_along_line(self, level, source, end_point)
             nova.log("Fireangel beam mod placing flames x"..burn_point.x..", y"..burn_point.y)
             gtk.place_flames( burn_point, math.max( flame_slevel + math.random(3), 2 ), 300 + math.random(400) + 50 )
         end
+    end
+end
 
+function debuff_along_line(self, level, source, end_point)
+    local start_point = source:get_position()
+    local points, _ = line(start_point.x, start_point.y, end_point.x, end_point.y, function (x,y)
+        return true
+    end)
+    local burn_point = source:get_position()
+    for _, v in ipairs(points) do
+        if v.x == start_point.x and v.y == start_point.y then
+            nova.log("Better Fireangel beam mod not debuffing player")
+        else
+            burn_point.x = v.x
+            burn_point.y = v.y
+            for e in level:entities( burn_point ) do
+                nova.log("Better Fireangel beam mod entity found on line")
+                if e.data and e.data.can_burn then
+                    nova.log("Better Fireangel beam mod trying to debuff "..e.text.name)
+                    local amount = world:get_player().attributes.fireangel_burn
+                    local slevel = core.get_status_value( amount, "ignite", world:get_player() )
+                    local ihlevel = world:get_player().data.intense_heat
+                    if ihlevel == 2 and e.attributes and e:attribute( "resist", "ignite" ) == 50 then
+                        world:add_buff( e, "intense_heat_3", (slevel + 2) * 100 )
+                    end
+                    if e.attributes and e:attribute( "resist", "ignite" ) >= 100 then
+                        nova.log("Intense heat duration "..(slevel + 2) * 100)
+                        if ihlevel == 1 then
+                            world:add_buff( e, "intense_heat_1", (slevel + 2) * 100 )
+                        elseif ihlevel == 2 then
+                            world:add_buff( e, "intense_heat_2", (slevel + 2) * 100 )
+                        end
+                    end
+                end
+            end
+        end
     end
 end
 
 register_blueprint "intense_heat_1"
 {
-    flags = { EF_NOPICKUP }, 
+    flags = { EF_NOPICKUP },
     text = {
         name    = "Intense Heat",
         desc    = "reduces fire resistances to {!50%}",
@@ -51,9 +86,9 @@ register_blueprint "intense_heat_1"
             end
         ]],
     },
-    attributes = {      
-        resist = {          
-            ignite = 0,         
+    attributes = {
+        resist = {
+            ignite = 0,
         },
     },
     ui_buff = {
@@ -63,7 +98,7 @@ register_blueprint "intense_heat_1"
 
 register_blueprint "intense_heat_2"
 {
-    flags = { EF_NOPICKUP }, 
+    flags = { EF_NOPICKUP },
     text = {
         name    = "Intense Heat",
         desc    = "reduces fire resistances to {!10%}",
@@ -81,9 +116,9 @@ register_blueprint "intense_heat_2"
             end
         ]],
     },
-    attributes = {      
-        resist = {          
-            ignite = 0,         
+    attributes = {
+        resist = {
+            ignite = 0,
         },
     },
     ui_buff = {
@@ -93,7 +128,7 @@ register_blueprint "intense_heat_2"
 
 register_blueprint "intense_heat_3"
 {
-    flags = { EF_NOPICKUP }, 
+    flags = { EF_NOPICKUP },
     text = {
         name    = "Intense Heat",
         desc    = "reduces fire resistances by {!50%}",
@@ -105,9 +140,9 @@ register_blueprint "intense_heat_3"
             end
         ]],
     },
-    attributes = {      
-        resist = {          
-            ignite = -50,           
+    attributes = {
+        resist = {
+            ignite = -50,
         },
     },
     ui_buff = {
@@ -117,17 +152,18 @@ register_blueprint "intense_heat_3"
 
 register_blueprint "kperk_fireangel"
 {
-    flags = { EF_NOPICKUP }, 
+    flags = { EF_NOPICKUP },
     callbacks = {
         on_area_damage = [[
-            function ( self, weapon, level, c, damage, distance, center, source, is_repeat )                
+            function ( self, weapon, level, c, damage, distance, center, source, is_repeat )
                 nova.log("Using modded fireangel perk - Better Fireangel")
-                if not is_repeat then                   
-                    if weapon and weapon.ui_target and weapon.ui_target.type == world:hash("beam") then                                                                     
-                        ignite_along_line(self, level, source, c)                       
+                if not is_repeat then
+                    if weapon and weapon.ui_target and weapon.ui_target.type == world:hash("beam") then
+                        debuff_along_line(self, level, source, c)
+                        ignite_along_line(self, level, source, c)
                     else
                         for e in level:entities( c ) do
-                            if e.data and e.data.can_burn then          
+                            if e.data and e.data.can_burn then
                                 local amount = world:get_player().attributes.fireangel_burn
                                 local slevel = core.get_status_value( amount, "ignite", world:get_player() )
                                 local ihlevel = world:get_player().data.intense_heat
@@ -140,19 +176,19 @@ register_blueprint "kperk_fireangel"
                                         world:add_buff( e, "intense_heat_1", (slevel + 2) * 100 )
                                     elseif ihlevel == 2 then
                                         world:add_buff( e, "intense_heat_2", (slevel + 2) * 100 )
-                                    end                                 
-                                end                             
+                                    end
+                                end
                                 core.apply_damage_status( e, "burning", "ignite", slevel, world:get_player() )
                             end
                         end
-                    end 
+                    end
                 end
                 if distance < 6 then
                     if distance < 1 then distance = 1 end
                     local amount = world:get_player().attributes.fireangel_flame
                     local slevel = core.get_status_value( math.max( amount + 1 - distance, 1 ), "ignite", world:get_player() )
                     gtk.place_flames( c, math.max( slevel + math.random(3), 2 ), 300 + math.random(400) + distance * 50 )
-                end             
+                end
             end
         ]],
     },
@@ -171,7 +207,7 @@ register_blueprint "ktrait_master_fireangel"
         level    = 1,
         affinity = {
             ignite = 0,
-        },      
+        },
     },
     callbacks = {
         on_activate = [=[
@@ -193,7 +229,7 @@ register_blueprint "ktrait_master_fireangel"
                 end
                 if tlevel == 1 then
                     local index = 0
-                    repeat 
+                    repeat
                         local w = world:get_weapon( entity, index, true )
                         if not w then break end
                         local fp = w:child("kperk_fireangel")
