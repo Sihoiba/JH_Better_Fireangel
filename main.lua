@@ -5,9 +5,9 @@ function ignite_along_line(self, level, source, end_point)
     local points, _ = line(start_point.x, start_point.y, end_point.x, end_point.y, function (x,y)
         return true
     end)
-    local burn_amount = world:get_player().attributes.fireangel_burn
+    local burn_amount = world:get_player().attributes.fireangel_burn or 1
     local burn_slevel = core.get_status_value( burn_amount, "ignite", world:get_player() )
-    local flame_amount = world:get_player().attributes.fireangel_flame
+    local flame_amount = world:get_player().attributes.fireangel_flame or 8
     local flame_slevel = core.get_status_value( flame_amount, "ignite", world:get_player() )
     nova.log("Fireangel beam mod checking for targets")
     local burn_point = source:get_position()
@@ -46,7 +46,7 @@ function debuff_along_line(self, level, source, end_point)
                 nova.log("Better Fireangel beam mod entity found on line")
                 if e.data and e.data.can_burn then
                     nova.log("Better Fireangel beam mod trying to debuff "..e.text.name)
-                    local amount = world:get_player().attributes.fireangel_burn
+                    local amount = world:get_player().attributes.fireangel_burn or 1
                     local slevel = core.get_status_value( amount, "ignite", world:get_player() )
                     local ihlevel = world:get_player().data.intense_heat
                     if ihlevel == 2 and e.attributes and e:attribute( "resist", "ignite" ) == 50 then
@@ -164,7 +164,7 @@ register_blueprint "kperk_fireangel"
                     else
                         for e in level:entities( c ) do
                             if e.data and e.data.can_burn then
-                                local amount = world:get_player().attributes.fireangel_burn
+                                local amount = world:get_player().attributes.fireangel_burn or 1
                                 local slevel = core.get_status_value( amount, "ignite", world:get_player() )
                                 local ihlevel = world:get_player().data.intense_heat
                                 if ihlevel == 2 and e.attributes and e:attribute( "resist", "ignite" ) == 50 then
@@ -185,7 +185,7 @@ register_blueprint "kperk_fireangel"
                 end
                 if distance < 6 then
                     if distance < 1 then distance = 1 end
-                    local amount = world:get_player().attributes.fireangel_flame
+                    local amount = world:get_player().attributes.fireangel_flame or 8
                     local slevel = core.get_status_value( math.max( amount + 1 - distance, 1 ), "ignite", world:get_player() )
                     gtk.place_flames( c, math.max( slevel + math.random(3), 2 ), 300 + math.random(400) + distance * 50 )
                 end
