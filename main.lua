@@ -1,71 +1,3 @@
-nova.require "libraries/bresenham"
-
-function ignite_along_line(self, level, source, end_point)
-    local start_point = source:get_position()
-    local points, _ = line(start_point.x, start_point.y, end_point.x, end_point.y, function (x,y)
-        return true
-    end)
-    local burn_amount = world:get_player().attributes.fireangel_burn or 1
-    local burn_slevel = core.get_status_value( burn_amount, "ignite", world:get_player() )
-    local flame_amount = world:get_player().attributes.fireangel_flame or 8
-    local flame_slevel = core.get_status_value( flame_amount, "ignite", world:get_player() )
-    nova.log("Fireangel beam mod checking for targets")
-    local burn_point = source:get_position()
-    for _, v in ipairs(points) do
-        if v.x == start_point.x and v.y == start_point.y then
-            nova.log("Fireangel beam mod not igniting player")
-        else
-            burn_point.x = v.x
-            burn_point.y = v.y
-            for e in level:entities( burn_point ) do
-                nova.log("Fireangel beam mod entity found on line")
-                if e.data and e.data.can_burn then
-                    nova.log("Fireangel beam mod trying to burn "..e.text.name)
-                    core.apply_damage_status( e, "burning", "ignite", burn_slevel, world:get_player())
-                end
-            end
-            nova.log("Fireangel beam mod placing flames x"..burn_point.x..", y"..burn_point.y)
-            gtk.place_flames( burn_point, math.max( flame_slevel + math.random(3), 2 ), 300 + math.random(400) + 50 )
-        end
-    end
-end
-
-function debuff_along_line(self, level, source, end_point)
-    local start_point = source:get_position()
-    local points, _ = line(start_point.x, start_point.y, end_point.x, end_point.y, function (x,y)
-        return true
-    end)
-    local burn_point = source:get_position()
-    for _, v in ipairs(points) do
-        if v.x == start_point.x and v.y == start_point.y then
-            nova.log("Better Fireangel beam mod not debuffing player")
-        else
-            burn_point.x = v.x
-            burn_point.y = v.y
-            for e in level:entities( burn_point ) do
-                nova.log("Better Fireangel beam mod entity found on line")
-                if e.data and e.data.can_burn then
-                    nova.log("Better Fireangel beam mod trying to debuff "..e.text.name)
-                    local amount = world:get_player().attributes.fireangel_burn or 1
-                    local slevel = core.get_status_value( amount, "ignite", world:get_player() )
-                    local ihlevel = world:get_player().data.intense_heat
-                    if ihlevel == 2 and e.attributes and e:attribute( "resist", "ignite" ) == 50 then
-                        world:add_buff( e, "intense_heat_3", (slevel + 2) * 100 )
-                    end
-                    if e.attributes and e:attribute( "resist", "ignite" ) >= 100 then
-                        nova.log("Intense heat duration "..(slevel + 2) * 100)
-                        if ihlevel == 1 then
-                            world:add_buff( e, "intense_heat_1", (slevel + 2) * 100 )
-                        elseif ihlevel == 2 then
-                            world:add_buff( e, "intense_heat_2", (slevel + 2) * 100 )
-                        end
-                    end
-                end
-            end
-        end
-    end
-end
-
 register_blueprint "intense_heat_1"
 {
     flags = { EF_NOPICKUP },
@@ -157,31 +89,26 @@ register_blueprint "kperk_fireangel"
         on_area_damage = [[
             function ( self, weapon, level, c, damage, distance, center, source, is_repeat )
                 nova.log("Using modded fireangel perk - Better Fireangel")
-                if not is_repeat then
-                    if weapon and weapon.ui_target and weapon.ui_target.type == world:hash("beam") then
-                        debuff_along_line(self, level, source, c)
-                        ignite_along_line(self, level, source, c)
-                    else
-                        for e in level:entities( c ) do
-                            if e.data and e.data.can_burn then
-                                local amount = world:get_player().attributes.fireangel_burn or 1
-                                local slevel = core.get_status_value( amount, "ignite", world:get_player() )
-                                local ihlevel = world:get_player().data.intense_heat
-                                if ihlevel == 2 and e.attributes and e:attribute( "resist", "ignite" ) == 50 then
-                                    world:add_buff( e, "intense_heat_3", (slevel + 2) * 100 )
-                                end
-                                if e.attributes and e:attribute( "resist", "ignite" ) >= 100 then
-                                    nova.log("Intense heat duration "..(slevel + 2) * 100)
-                                    if ihlevel == 1 then
-                                        world:add_buff( e, "intense_heat_1", (slevel + 2) * 100 )
-                                    elseif ihlevel == 2 then
-                                        world:add_buff( e, "intense_heat_2", (slevel + 2) * 100 )
-                                    end
-                                end
-                                core.apply_damage_status( e, "burning", "ignite", slevel, world:get_player() )
-                            end
-                        end
-                    end
+                if not is_repeat then                    
+					for e in level:entities( c ) do
+						if e.data and e.data.can_burn then
+							local amount = world:get_player().attributes.fireangel_burn or 1
+							local slevel = core.get_status_value( amount, "ignite", world:get_player() )
+							local ihlevel = world:get_player().data.intense_heat
+							if ihlevel == 2 and e.attributes and e:attribute( "resist", "ignite" ) == 50 then
+								world:add_buff( e, "intense_heat_3", (slevel + 2) * 100 )
+							end
+							if e.attributes and e:attribute( "resist", "ignite" ) >= 100 then
+								nova.log("Intense heat duration "..(slevel + 2) * 100)
+								if ihlevel == 1 then
+									world:add_buff( e, "intense_heat_1", (slevel + 2) * 100 )
+								elseif ihlevel == 2 then
+									world:add_buff( e, "intense_heat_2", (slevel + 2) * 100 )
+								end
+							end
+							core.apply_damage_status( e, "burning", "ignite", slevel, world:get_player() )
+						end
+					end
                 end
                 if distance < 6 then
                     if distance < 1 then distance = 1 end
